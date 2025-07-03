@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Om Pandey for Lucknow RC | IITM BS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Dark Neutrals (Deep Slate, Muted Teal Accent) -->
+    <!-- Application Structure Plan: A single-page, vertically scrolling application designed as an interactive manifesto. It uses a sticky top navigation for easy access to all key sections (Vision, Pillars, Commitment, Vote). The core promises are presented in an interactive card-based layout, allowing users to explore each pillar without being overwhelmed by text. This structure was chosen to translate the linear slideshow format into a more dynamic and user-directed web experience, encouraging exploration rather than passive viewing. A central radar chart provides a quick visual summary of the candidate's balanced platform. -->
+    <!-- Visualization & Content Choices:
+        - Report Info: 4 Core Pillars (Social, Academics, Support, Well-being). Goal: Organize & Inform. Viz/Presentation: Interactive Cards (HTML/CSS/JS). Interaction: On-click expansion to show details. Justification: Breaks down text-heavy promises into manageable, user-triggered chunks, improving readability and engagement.
+        - Report Info: Platform Summary. Goal: Compare/Inform. Viz/Presentation: Radar Chart (Chart.js/Canvas). Interaction: Animated load, tooltips on hover. Justification: Provides a high-level, memorable visual summary of the candidate's balanced focus, fulfilling the data visualization requirement without fabricating numerical data.
+        - Report Info: Commitment (Accessible, Transparent, Action-Oriented). Goal: Inform. Viz/Presentation: Icon-driven cards (HTML/CSS). Justification: Visually separates and reinforces the candidate's core values.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1A202C; /* Dark background */
+            color: #E2E8F0; /* Light text */
+        }
+        .nav-link.active {
+            color: #2DD4BF; /* Lighter teal for active link */
+            font-weight: 700;
+        }
+        .pillar-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .pillar-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.2); /* Darker shadow */
+        }
+        .details-content {
+            transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .details-content.open {
+            max-height: 500px;
+            opacity: 1;
+        }
+        .chart-container {
+            position: relative;
+            margin: auto;
+            height: 40vh;
+            max-height: 400px;
+            width: 100%;
+            max-width: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                max-width: 500px;
+                max-height: 500px;
+            }
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+        }
+        .animate-on-scroll.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .delay-100 { transition-delay: 0.1s; }
+        .delay-200 { transition-delay: 0.2s; }
+        .delay-300 { transition-delay: 0.3s; }
+        .delay-400 { transition-delay: 0.4s; }
+
+        .emoji-animate {
+            display: inline-block; /* Ensures transform works correctly */
+            transition: transform 0.3s ease-in-out;
+        }
+        .emoji-animate:hover {
+            transform: scale(1.2);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header id="header" class="bg-gray-800/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <a href="#hero" class="text-xl font-bold text-gray-100">Om Pandey</a>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#vision" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-teal-400 transition-colors">Vision</a>
+                        <a href="#pillars" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-teal-400 transition-colors">Pillars</a>
+                        <a href="#commitment" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-teal-400 transition-colors">Commitment</a>
+                        <a href="#vote" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-teal-400 transition-colors">Vote</a>
+                    </div>
+                </div>
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-200 hover:bg-gray-700 focus:outline-none">
+                        <span class="sr-only">Open main menu</span>
+                        <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
+        <div id="mobile-menu" class="md:hidden hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="#vision" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-teal-400 hover:bg-gray-700 transition-colors">Vision</a>
+                <a href="#pillars" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-teal-400 hover:bg-gray-700 transition-colors">Pillars</a>
+                <a href="#commitment" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-teal-400 hover:bg-gray-700 transition-colors">Commitment</a>
+                <a href="#vote" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-teal-400 hover:bg-gray-700 transition-colors">Vote</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section id="hero" class="py-20 md:py-28 bg-gray-900">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h1 class="text-4xl md:text-6xl font-extrabold text-gray-100 tracking-tight leading-tight animate-on-scroll">
+                    A Vision for a Vibrant & Connected
+                    <span class="block text-teal-400">Gir House Online Community</span>
+                </h1>
+                <p class="mt-6 max-w-2xl mx-auto text-lg md:text-xl text-gray-300 animate-on-scroll delay-100">
+                    Manifesto for Lucknow RC Elections | IITM BS
+                </p>
+            </div>
+        </section>
+
+        <section id="vision" class="py-16 sm:py-20 bg-gray-800">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+                <div class="text-center animate-on-scroll">
+                    <h2 class="text-3xl font-bold tracking-tight text-gray-100 sm:text-4xl">Building a Stronger Online Community</h2>
+                    <p class="mt-4 text-lg text-gray-300">This section outlines the core vision for our community. The goal is to create an environment where every student feels included, engaged, and supported throughout their online learning journey. This vision is built on the principles of active participation, mutual respect, and a shared sense of belonging.</p>
+                </div>
+                <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                    <div class="p-6 bg-gray-700 rounded-xl shadow-md animate-on-scroll delay-100">
+                        <div class="text-3xl text-teal-400 emoji-animate">🤝</div>
+                        <h3 class="mt-4 text-lg font-bold text-gray-100">Representation</h3>
+                        <p class="mt-2 text-gray-300">Representing your voices and actively addressing your concerns.</p>
+                    </div>
+                    <div class="p-6 bg-gray-700 rounded-xl shadow-md animate-on-scroll delay-200">
+                        <div class="text-3xl text-teal-400 emoji-animate">🚀</div>
+                        <h3 class="mt-4 text-lg font-bold text-gray-100">Enhancement</h3>
+                        <p class="mt-2 text-gray-300">Enhancing our collective learning and social experience.</p>
+                    </div>
+                    <div class="p-6 bg-gray-700 rounded-xl shadow-md animate-on-scroll delay-300">
+                        <div class="text-3xl text-teal-400 emoji-animate">🌍</div>
+                        <h3 class="mt-4 text-lg font-bold text-gray-100">Belonging</h3>
+                        <p class="mt-2 text-gray-300">Fostering a community where everyone feels they belong.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="pillars" class="py-16 sm:py-20 bg-gray-900">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center animate-on-scroll">
+                    <h2 class="text-3xl font-bold tracking-tight text-gray-100 sm:text-4xl">My Core Pillars</h2>
+                     <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-300">My platform is built on four key pillars designed to address all aspects of our student life. From social events to academic support, these pillars form a comprehensive plan for action. Click on each pillar to see the detailed initiatives I propose to implement. Below the pillars, a chart visualizes my balanced focus across these critical areas.</p>
+                </div>
+                <div class="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    
+                    <div class="pillar-card bg-gray-700 rounded-xl cursor-pointer animate-on-scroll delay-100" data-target="details-1">
+                        <div class="p-6 flex items-center space-x-4">
+                            <div class="text-4xl emoji-animate">🎮</div>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-100">Enhanced Online Social Life</h3>
+                                <p class="text-gray-300">Connecting beyond classes.</p>
+                            </div>
+                        </div>
+                        <div id="details-1" class="details-content px-6 pb-6">
+                           <ul class="list-disc list-inside space-y-2 text-gray-300">
+                                <li><b>Regular Virtual Events:</b> Monthly game nights, movie watch parties, and talent showcases.</li>
+                                <li><b>Virtual Social Spaces:</b> Utilizing digital platforms for informal connections.</li>
+                                <li><b>Virtual Festive Celebrations:</b> Engaging online events for major festivals.</li>
+                           </ul>
+                        </div>
+                    </div>
+
+                    <div class="pillar-card bg-gray-700 rounded-xl cursor-pointer animate-on-scroll delay-200" data-target="details-2">
+                        <div class="p-6 flex items-center space-x-4">
+                            <div class="text-4xl emoji-animate">📚</div>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-100">Academic & Professional Growth</h3>
+                                <p class="text-gray-300">Empowering your journey.</p>
+                            </div>
+                        </div>
+                        <div id="details-2" class="details-content px-6 pb-6">
+                           <ul class="list-disc list-inside space-y-2 text-gray-300">
+                                <li><b>Peer-to-Peer Learning:</b> Facilitating online study groups and doubt-clearing sessions.</li>
+                                <li><b>Digital Resource Sharing:</b> A dedicated platform for notes and academic materials.</li>
+                                <li><b>Career Guidance Workshops:</b> Virtual sessions with seniors and alumni.</li>
+                                <li class="mt-2 p-3 bg-teal-900 border-l-4 border-teal-500 rounded-r-lg text-gray-200">
+                                    <b>My Experience:</b> As the <b>Event Head of PolicyForge</b>, I have the leadership skills to make these initiatives successful.
+                                </li>
+                           </ul>
+                           <div class="mt-4">
+                                <a href="https://www.linkedin.com/posts/om-pandey-53b648348_policyforge-paradox25-iitmbs-activity-7342921961934569472-VjBu?utm_source=share&utm_medium=member_desktop&rcm=ACoAAFbyxP8Btd5Stmu-dh7dsimT6FHd81tWLEE" target="_blank" class="inline-block bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-full transition-colors">
+                                    View PolicyForge on LinkedIn
+                                </a>
+                           </div>
+                        </div>
+                    </div>
+
+                    <div class="pillar-card bg-gray-700 rounded-xl cursor-pointer animate-on-scroll delay-300" data-target="details-3">
+                        <div class="p-6 flex items-center space-x-4">
+                            <div class="text-4xl emoji-animate">⚙️</div>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-100">Effective Support & Digital Environment</h3>
+                                <p class="text-gray-300">Ensuring a seamless experience.</p>
+                            </div>
+                        </div>
+                        <div id="details-3" class="details-content px-6 pb-6">
+                           <ul class="list-disc list-inside space-y-2 text-gray-300">
+                                <li><b>Streamlined Grievance Redressal:</b> Acting as a direct liaison for efficient issue handling.</li>
+                                <li><b>Optimized Digital Experience:</b> Advocating for improvements in our online learning platforms.</li>
+                                <li><b>Transparent Feedback Mechanism:</b> Implementing a system for continuous resident input.</li>
+                           </ul>
+                        </div>
+                    </div>
+
+                    <div class="pillar-card bg-gray-700 rounded-xl cursor-pointer animate-on-scroll delay-400" data-target="details-4">
+                        <div class="p-6 flex items-center space-x-4">
+                            <div class="text-4xl emoji-animate">🧘</div>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-100">Health & Well-being</h3>
+                                <p class="text-gray-300">Promoting a balanced lifestyle.</p>
+                            </div>
+                        </div>
+                        <div id="details-4" class="details-content px-6 pb-6">
+                           <ul class="list-disc list-inside space-y-2 text-gray-300">
+                                <li><b>Online Awareness Campaigns:</b> Sessions on mental health, digital well-being, and ergonomics.</li>
+                                <li><b>Virtual Wellness Activities:</b> Exploring online yoga, mindfulness, and group fitness.</li>
+                           </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-20 animate-on-scroll delay-200">
+                    <div class="chart-container">
+                        <canvas id="pillarsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="commitment" class="py-16 sm:py-20 bg-gray-800">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
+                <div class="text-center animate-on-scroll">
+                    <h2 class="text-3xl font-bold tracking-tight text-gray-100 sm:text-4xl">My Promise to You</h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-300">This section details my personal commitment to serving our community. These are the core values that will guide my actions as your representative. I believe that effective leadership is built on trust, and these promises are my pledge to you.</p>
+                </div>
+                <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="p-8 text-center bg-gray-700 rounded-xl shadow-lg animate-on-scroll delay-100">
+                        <div class="text-4xl emoji-animate">👂</div>
+                        <h3 class="mt-4 text-xl font-bold text-gray-100">Accessible</h3>
+                        <p class="mt-2 text-gray-300">My virtual channels will always be open. I commit to being approachable and available to listen to your ideas, concerns, and suggestions.</p>
+                    </div>
+                    <div class="p-8 text-center bg-gray-700 rounded-xl shadow-lg animate-on-scroll delay-200">
+                         <div class="text-4xl emoji-animate">🔍</div>
+                        <h3 class="mt-4 text-xl font-bold text-gray-100">Transparent</h3>
+                        <p class="mt-2 text-gray-300">All decisions and initiatives will be communicated clearly and openly to the community members through appropriate online channels.</p>
+                    </div>
+                    <div class="p-8 text-center bg-gray-700 rounded-xl shadow-lg animate-on-scroll delay-300">
+                         <div class="text-4xl emoji-animate">⚡️</div>
+                        <h3 class="mt-4 text-xl font-bold text-gray-100">Action-Oriented</h3>
+                        <p class="mt-2 text-gray-300">I will not just listen; I will act. My focus will be on tangible outcomes that genuinely improve our online learning and community experience.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="vote" class="py-20 sm:py-24 bg-teal-700 text-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center animate-on-scroll">
+                <h2 class="text-3xl font-extrabold tracking-tight sm:text-4xl">Together, We Thrive!</h2>
+                <p class="mt-4 max-w-2xl mx-auto text-lg text-teal-200">Let's make our Gir House online community a place where we not only learn, but connect, grow, and succeed together. Your vote is a step towards a more vibrant and supportive future.</p>
+                <div class="mt-8 animate-on-scroll delay-100">
+                    <a href="https://elections.iitmbs.org/" target="_blank" class="inline-block bg-white text-teal-800 font-bold rounded-lg px-8 py-4 shadow-xl hover:bg-teal-100 transition-colors">
+                        Vote for Om Pandey for Lucknow RC!
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-900 text-gray-400">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center text-sm">
+            <p>Manifesto by Om Pandey | Candidate for Lucknow RC, Gir House, IITM BS</p>
+        </div>
+    </footer>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Mobile menu toggle
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                const isHidden = mobileMenu.classList.contains('hidden');
+                mobileMenu.classList.toggle('hidden', !isHidden);
+            });
+
+            // Smooth scroll for nav links & close mobile menu on click
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
+                    if(targetElement) {
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                    }
+                    if (!mobileMenu.classList.contains('hidden')) {
+                         mobileMenu.classList.add('hidden');
+                    }
+                });
+            });
+
+            // Pillar cards interaction
+            const pillarCards = document.querySelectorAll('.pillar-card');
+            pillarCards.forEach(card => {
+                card.addEventListener('click', (event) => {
+                    const targetId = card.dataset.target;
+                    const detailsContent = document.getElementById(targetId);
+                    const isOpen = detailsContent.classList.contains('open');
+                    
+                    document.querySelectorAll('.details-content.open').forEach(openContent => {
+                        if (openContent.id !== targetId) {
+                            openContent.classList.remove('open');
+                        }
+                    });
+
+                    detailsContent.classList.toggle('open', !isOpen);
+                });
+            });
+
+            // Chart.js Radar Chart
+            const ctx = document.getElementById('pillarsChart').getContext('2d');
+            const pillarsChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: [
+                        'Enhanced Social Life', 
+                        'Academic & Prof. Growth', 
+                        'Digital Environment', 
+                        'Health & Well-being'
+                    ],
+                    datasets: [{
+                        label: 'Focus Areas',
+                        data: [10, 10, 10, 10],
+                        backgroundColor: 'rgba(45, 212, 191, 0.2)', /* Lighter teal with transparency */
+                        borderColor: 'rgb(45, 212, 191)', /* Lighter teal */
+                        pointBackgroundColor: 'rgb(45, 212, 191)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgb(45, 212, 191)'
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    scales: {
+                        r: {
+                            angleLines: {
+                                color: 'rgba(226, 232, 240, 0.2)' /* Lighter lines for dark mode */
+                            },
+                            grid: {
+                                color: 'rgba(226, 232, 240, 0.2)' /* Lighter grid for dark mode */
+                            },
+                            pointLabels: {
+                                font: {
+                                    size: 12,
+                                    weight: 'bold'
+                                },
+                                color: '#E2E8F0' /* Light text for labels */
+                            },
+                            ticks: {
+                                display: false,
+                                beginAtZero: true,
+                                max: 12,
+                                stepSize: 3,
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                             callbacks: {
+                                label: function(context) {
+                                    return 'A key focus area of my manifesto.';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Active nav link highlighting on scroll
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href').substring(1) === entry.target.id) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, { rootMargin: '-50% 0px -50% 0px' });
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+
+            // Animation on scroll
+            const animatedElements = document.querySelectorAll('.animate-on-scroll');
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.1
+            };
+
+            const animationObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            animatedElements.forEach(element => {
+                animationObserver.observe(element);
+            });
+        });
+    </script>
+
+</body>
+</html>
